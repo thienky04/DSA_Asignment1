@@ -61,7 +61,7 @@ There are serveral method which named after some characters in Manga(?):
 ### 3. Class Diagram ###
 After analysing the requirements, one of the possible designs can be as below. 
 (Check the Appendix for explanation for these symbols in case you are not familiar with them).
-![Alt text](gleek-_qjhpOAMsbRipjw7XC1L4Q.png)
+![Alt text](gleek-_qjhpOAMsbRipjw7XC1L4Q(1).png)
 ## 4. Flowcharts and short-details of methods
 ## 5. Unit Test ##
 ## 6. Appendix ##
