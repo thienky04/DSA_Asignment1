@@ -8,8 +8,9 @@
   - [2.5. UNLIMITED\_VOID()](#25-unlimited_void)
   - [2.6. DOMAIN\_EXPANSION()](#26-domain_expansion)
   - [2.7. LIGHT(INT NUM)](#27-lightint-num)
-  - [3. Class Diagram](#3-class-diagram)
+- [3. Class Diagram](#3-class-diagram)
 - [4. Flowcharts and short-details of methods](#4-flowcharts-and-short-details-of-methods)
+  - [4.1. RED()](#41-red)
 - [5. Unit Test](#5-unit-test)
 - [6. Appendix](#6-appendix)
 
@@ -58,11 +59,12 @@ There are serveral method which named after some characters in Manga(?):
 ### 2.7. LIGHT(INT NUM) ###
 - Print out "NAME-ENERGY/n" of all customers in the table in clockwise direction if NUM>0 and conversely.
   
-### 3. Class Diagram ###
+## 3. Class Diagram ##
 After analysing the requirements, one of the possible designs can be as below. 
 (Check the Appendix for explanation for these symbols in case you are not familiar with them).
 ![Alt text](gleek-_qjhpOAMsbRipjw7XC1L4Q(1).png)
 ## 4. Flowcharts and short-details of methods
+### 4.1. RED() ###
 ## 5. Unit Test ##
 ## 6. Appendix ##
 
