@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
-
+int MAXSIZE;
 using namespace std;
 class Restaurant {
 
