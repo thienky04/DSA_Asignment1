@@ -1,7 +1,7 @@
 #ASIGNMENT I - DSA DOCUMENT
 - [1. Introduction \& Prerequisites](#1-introduction--prerequisites)
 - [2. Requirements \& Class Diagram](#2-requirements--class-diagram)
-  - [2.1. RED()](#21-red)
+  - [2.1. RED(string name, int energy)](#21-redstring-name-int-energy)
   - [2.2. BLUE(INT NUM)](#22-blueint-num)
   - [2.3. PURPLE()](#23-purple)
   - [2.4. REVERSAL()](#24-reversal)
@@ -29,7 +29,7 @@ We are required to implement some methods that meet up the demand of Restaurant 
 - CL  (Chu-linh): ENERGY < 0
 No accept the 0-ENERGY customer.
 There are serveral method which named after some characters in Manga(?):
-  ### 2.1. RED() ###
+  ### 2.1. RED(string name, int energy) ###
 - Responsible for arranging tables in the Restaurant based on customers's information(ENERGY), the first customer came can sit anywhere they want
 - When SIZE < MAXSIZE/2:
     - New customer will be arranged next to the last changed position (get out or in) which is called X for short

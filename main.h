@@ -5,7 +5,6 @@
 #include <math.h>
 
 using namespace std;
-
 class Restaurant {
 
 	public:
