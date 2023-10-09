@@ -2,7 +2,6 @@
 #include "Restaurant.cpp"
 #include <fstream>
 
-int MAXSIZE;
 
 void simulate(string filename, imp_res* r)
 {
@@ -19,6 +18,7 @@ void simulate(string filename, imp_res* r)
         {
             ss >> name;
             ss >> energy;
+		
             r->RED(name, stoi(energy));
     	}
     	else if(str == "BLUE") // BLUE <NUM>
@@ -54,10 +54,11 @@ int main(int argc, char* argv[]) {
 	//if (argc < 2)
     //	return 1;
 	//  string fileName = argv[1];
-	imp_res* r = new imp_res();
-	string fileName = "test.txt";
-    simulate(fileName, r);
-  	delete r;
+	 imp_res* r = new imp_res();
+	 string fileName = "test.txt";
+     simulate(fileName, r);
+  	// delete r;
+		cout<<"hehe \n";
 	return 0;
 }
 

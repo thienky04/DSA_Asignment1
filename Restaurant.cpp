@@ -16,7 +16,7 @@ public:
 	~Ref_Customer(){};
 	Ref_Customer(Restaurant::customer *cus, Ref_Customer *next = nullptr, Ref_Customer *prev = nullptr)
 	{
-		*refCustomer = cus;
+		this->refCustomer = &cus;
 		this->next = next;
 		this->prev = prev;
 	};
@@ -46,9 +46,8 @@ public:
 			tail = newRef;
 		}
 		size++;
-		totalEnergy += newCus->energy;
 	};
-	Restaurant::customer *&remove_Reference(Ref_Customer *removeCus) // this method remove the Ref to the removeCus and return
+	Restaurant::customer *remove_Reference(Ref_Customer *removeCus) // this method remove the Ref to the removeCus and return
 	{
 		if (!removeCus)
 		{
@@ -86,7 +85,7 @@ public:
 		totalEnergy -= cus->energy;
 		return cus;
 	};
-	Ref_Customer *&refToCustomer(Restaurant::customer *cus) // return the reference to this customer (to delete...)
+	Ref_Customer *refToCustomer(Restaurant::customer *cus) // return the reference to this customer (to delete...)
 	{
 		if (!cus)
 		{
@@ -130,6 +129,7 @@ public:
 	};
 	bool search_Name_Outside(const string &name)
 	{
+		if(size == 0)	return false;
 		Restaurant::customer *check = head;
 		while (check)
 		{
@@ -208,7 +208,7 @@ public:
 			this->CL_Energy_Sum_W += removeCus->energy;
 		}
 	};
-	Waiting_Queue() : head(nullptr), tail(nullptr), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
+	Waiting_Queue() : head(nullptr), tail(nullptr),size(0), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
 	~Waiting_Queue(){
 		this->clear();
 	};
@@ -357,6 +357,7 @@ public:
 		{
 			this->lastChangedPlace = newCus;
 			this->size++;
+			newCus->next = newCus->prev = newCus;
 			this->timer_Queue->push_back(newCus);
 			return;
 		}
@@ -393,8 +394,8 @@ public:
 	void PURPLE(){
 
 	};
-	void REVERSAL();
-	void UNLIMITED_VOID();
+	void REVERSAL(){};
+	void UNLIMITED_VOID(){};
 	void DOMAIN_EXPANSION()
 	{
 		//logicControl used to control the logic so that we dont need to duplicate the code for if else 
@@ -419,7 +420,7 @@ public:
 			}
 			refCusIter = tempRef;
 		}
-		Restaurant::customer *cusIter = this->waiting_Queue->head;
+		cusIter = this->waiting_Queue->head;
 		for (int i = 0; i < waitSize; i++)
 		{
 			tempCus = cusIter->next;

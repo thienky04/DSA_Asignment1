@@ -9,7 +9,7 @@ class Restaurant {
 
 	public:
 		Restaurant() {};
-		~Restaurant() {};
+		virtual ~Restaurant() {};
 		virtual void RED(string name, int energy) = 0;
 		virtual void BLUE(int num) = 0;
 		virtual void PURPLE() = 0;
