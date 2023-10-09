@@ -29,7 +29,8 @@ public:
 	int size;
 	int totalEnergy;
 	Ref_List() : head{nullptr}, tail{nullptr}, size(0), totalEnergy(0){};
-	~Ref_List(){};
+	~Ref_List(){
+	};
 	void rotate_Ref(); // used for REVERSAL METHOD
 	void push_back(Restaurant::customer *newCus)
 	{
@@ -108,6 +109,16 @@ class Waiting_Queue
 public:
 	Restaurant::customer *head;
 	Restaurant::customer *tail;
+	void clear()
+	{
+		int tempSize = size;
+		for(int i =0;i<tempSize;i++)
+		{
+			Restaurant::customer* removed = this->head;
+			this->remove_Out_Of_Queue(this->head);
+			delete removed;
+		}
+	}
 	int size;
 	int CTS_Energy_Sum_W;
 	int CL_Energy_Sum_W;
@@ -198,7 +209,9 @@ public:
 		}
 	};
 	Waiting_Queue() : head(nullptr), tail(nullptr), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
-	~Waiting_Queue(){};
+	~Waiting_Queue(){
+		this->clear();
+	};
 };
 class imp_res : public Restaurant
 {
@@ -214,7 +227,10 @@ public:
 		timer_Queue = new Ref_List();
 		waiting_Queue = new Waiting_Queue();
 	};
-	~imp_res(){};
+	~imp_res(){
+		this->BLUE(size);
+		delete this->waiting_Queue;
+	};
 	bool res_Is_Full() { return size >= MAXSIZE; };
 	void insert_Second_Case(customer *newCus)
 	{
@@ -447,38 +463,5 @@ public:
 		}
 	}
 
-	// 	public:
-	// 		imp_res() {
 
-	// 		};
-
-	// 		void RED(string name, int energy)
-	// 		{
-	// 			cout << name << " " << energy << endl;
-	// 			customer *cus = new customer (name, energy, nullptr, nullptr);
-	// 		}
-	// 		void BLUE(int num)
-	// 		{
-	// 			cout << "blue "<< num << endl;
-	// 		}
-	// 		void PURPLE()
-	// 		{
-	// 			cout << "purple"<< endl;
-	// 		}
-	// 		void REVERSAL()
-	// 		{
-	// 			cout << "reversal" << endl;
-	// 		}
-	// 		void UNLIMITED_VOID()
-	// 		{
-	// 			cout << "unlimited_void" << endl;
-	// 		}
-	// 		void DOMAIN_EXPANSION()
-	// 		{
-	// 			cout << "domain_expansion" << endl;
-	// 		}
-	// 		void LIGHT(int num)
-	// 		{
-	// 			cout << "light " << num << endl;
-	// 		}
 };
