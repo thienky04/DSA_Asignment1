@@ -28,8 +28,7 @@ class Restaurant {
 				customer(){}
 				customer(string na, int e, customer* p, customer *ne): name(na), energy(e), prev(p), next(ne){}
 				~customer(){
-					delete prev;
-					delete next;
+
 				}
 				void print() {
 					cout << name << "-" << energy << endl;

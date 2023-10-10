@@ -57,8 +57,7 @@ int main(int argc, char* argv[]) {
 	 imp_res* r = new imp_res();
 	 string fileName = "test.txt";
      simulate(fileName, r);
-  	// delete r;
-		cout<<"hehe \n";
+  	delete r;
 	return 0;
 }
 

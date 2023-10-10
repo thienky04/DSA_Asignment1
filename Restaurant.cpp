@@ -7,16 +7,15 @@ enum CustomerType
 class Ref_Customer
 {
 public:
-	Restaurant::customer **refCustomer;
+	Restaurant::customer *refCustomer;
 	CustomerType type;
 	Ref_Customer *next;
 	Ref_Customer *prev;
-	Restaurant::customer *&operator*() { return *(this->refCustomer); };
 	Ref_Customer(){};
 	~Ref_Customer(){};
 	Ref_Customer(Restaurant::customer *cus, Ref_Customer *next = nullptr, Ref_Customer *prev = nullptr)
 	{
-		this->refCustomer = &cus;
+		this->refCustomer = cus;
 		this->next = next;
 		this->prev = prev;
 	};
@@ -29,8 +28,7 @@ public:
 	int size;
 	int totalEnergy;
 	Ref_List() : head{nullptr}, tail{nullptr}, size(0), totalEnergy(0){};
-	~Ref_List(){
-	};
+	~Ref_List(){};
 	void rotate_Ref(); // used for REVERSAL METHOD
 	void push_back(Restaurant::customer *newCus)
 	{
@@ -53,13 +51,23 @@ public:
 		{
 			throw std::out_of_range("Segmentation fault at remove_Reference method!");
 		}
-		Restaurant::customer *cus = *(removeCus->refCustomer);
-		if (removeCus == head)
+		Restaurant::customer *cus = removeCus->refCustomer;
+		if (removeCus == this->head)
 		{
-			Ref_Customer *newHead = removeCus->next;
-			newHead->prev = nullptr;
-			removeCus->next = nullptr;
-			head = newHead;
+			if (size == 1)
+			{
+				this->head = this->tail = nullptr;
+			}
+			else
+			{
+				Ref_Customer *newHead = removeCus->next;
+				if (newHead)
+				{
+					newHead->prev = nullptr;
+					removeCus->next = nullptr;
+					head = newHead;
+				}
+			}
 			removeCus->refCustomer = nullptr;
 			delete removeCus;
 		}
@@ -82,7 +90,6 @@ public:
 			delete removeCus;
 		}
 		size--;
-		totalEnergy -= cus->energy;
 		return cus;
 	};
 	Ref_Customer *refToCustomer(Restaurant::customer *cus) // return the reference to this customer (to delete...)
@@ -94,7 +101,7 @@ public:
 		Ref_Customer *ref = head;
 		while (ref)
 		{
-			if (*(ref->refCustomer) == cus)
+			if (ref->refCustomer == cus)
 				return ref;
 			else
 			{
@@ -111,9 +118,9 @@ public:
 	void clear()
 	{
 		int tempSize = size;
-		for(int i =0;i<tempSize;i++)
+		for (int i = 0; i < tempSize; i++)
 		{
-			Restaurant::customer* removed = this->head;
+			Restaurant::customer *removed = this->head;
 			this->remove_Out_Of_Queue(this->head);
 			delete removed;
 		}
@@ -129,7 +136,8 @@ public:
 	};
 	bool search_Name_Outside(const string &name)
 	{
-		if(size == 0)	return false;
+		if (size == 0)
+			return false;
 		Restaurant::customer *check = head;
 		while (check)
 		{
@@ -178,10 +186,19 @@ public:
 	{
 		if (removeCus == head)
 		{
-			Restaurant::customer *newHead = head->next;
-			newHead->prev = nullptr;
-			head->next = nullptr;
-			head = newHead;
+			if (this->size == 1)
+			{
+				this->size = 0;
+				this->head = nullptr;
+				this->tail = nullptr;
+			}
+			else
+			{
+				Restaurant::customer *newHead = head->next;
+				newHead->prev = nullptr;
+				head->next = nullptr;
+				head = newHead;
+			}
 		}
 		else if (removeCus == tail)
 		{
@@ -208,8 +225,9 @@ public:
 			this->CL_Energy_Sum_W += removeCus->energy;
 		}
 	};
-	Waiting_Queue() : head(nullptr), tail(nullptr),size(0), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
-	~Waiting_Queue(){
+	Waiting_Queue() : head(nullptr), tail(nullptr), size(0), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
+	~Waiting_Queue()
+	{
 		this->clear();
 	};
 };
@@ -227,8 +245,10 @@ public:
 		timer_Queue = new Ref_List();
 		waiting_Queue = new Waiting_Queue();
 	};
-	~imp_res(){
+	~imp_res()
+	{
 		this->BLUE(size);
+		delete this->timer_Queue;
 		delete this->waiting_Queue;
 	};
 	bool res_Is_Full() { return size >= MAXSIZE; };
@@ -259,10 +279,10 @@ public:
 	}
 	void insert_Left_Table(customer *newCus, customer *place)
 	{
-		Restaurant::customer *left = lastChangedPlace->prev;
+		Restaurant::customer *left = place->prev;
 		left->next = newCus;
 		newCus->prev = left;
-		newCus->next = lastChangedPlace;
+		newCus->next = place;
 		lastChangedPlace->prev = newCus;
 		this->lastChangedPlace = newCus;
 		this->size++;
@@ -277,11 +297,11 @@ public:
 	}
 	void insert_Right_Table(customer *newCus, customer *place)
 	{
-		Restaurant::customer *right = lastChangedPlace->next;
+		Restaurant::customer *right = place->next;
 		right->prev = newCus;
 		newCus->next = right;
-		newCus->prev = lastChangedPlace;
-		lastChangedPlace->next = newCus;
+		newCus->prev = place;
+		place->next = newCus;
 		this->lastChangedPlace = newCus;
 		this->size++;
 		if (newCus->energy > 0)
@@ -316,8 +336,6 @@ public:
 		}
 		if (size == 1)
 		{
-			removeCus->next = nullptr;
-			removeCus->prev = nullptr;
 			this->lastChangedPlace = nullptr;
 			this->size--;
 		}
@@ -335,6 +353,8 @@ public:
 			{
 				this->lastChangedPlace = left;
 			}
+			removeCus->next = nullptr;
+			removeCus->prev = nullptr;
 			size--;
 		}
 		if (removeCus->energy > 0)
@@ -376,6 +396,7 @@ public:
 		else if (this->size >= MAXSIZE / 2 && this->size < MAXSIZE)
 		{
 			this->insert_Second_Case(newCus);
+			this->timer_Queue->push_back(newCus);
 		}
 		else if (this->size == MAXSIZE)
 		{
@@ -384,11 +405,24 @@ public:
 	}
 	void BLUE(int num)
 	{
-		for (int i = 0; i < num; i++)
+		if (num <= size)
 		{
-			Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(this->timer_Queue->head);
-			this->remove_Customer_Table(removedCus);
-			delete removedCus;
+			for (int i = 0; i < num; i++)
+			{
+				Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(this->timer_Queue->head);
+				this->remove_Customer_Table(removedCus);
+				// delete removedCus;
+			}
+		}
+		else if (num > size)
+		{
+			int firstSize = size;
+			for (int i = 0; i < firstSize; i++)
+			{
+				Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(this->timer_Queue->head);
+				this->remove_Customer_Table(removedCus);
+				delete removedCus;
+			}
 		}
 	}
 	void PURPLE(){
@@ -398,7 +432,7 @@ public:
 	void UNLIMITED_VOID(){};
 	void DOMAIN_EXPANSION()
 	{
-		//logicControl used to control the logic so that we dont need to duplicate the code for if else 
+		// logicControl used to control the logic so that we dont need to duplicate the code for if else
 		bool logicControl = this->CTS_energySum + this->waiting_Queue->CL_Energy_Sum_W < this->CL_energySum + this->waiting_Queue->CL_Energy_Sum_W;
 		Ref_Customer *refCusIter = this->timer_Queue->head;
 		Ref_Customer *tempRef = nullptr;
@@ -408,7 +442,7 @@ public:
 		int waitSize = this->waiting_Queue->size;
 		for (int i = 0; i < resSize; i++)
 		{
-			cusIter = *(refCusIter->refCustomer);
+			cusIter = refCusIter->refCustomer;
 			tempRef = refCusIter->next;
 			if ((cusIter->energy < 0) ^ logicControl)
 			{
@@ -435,34 +469,32 @@ public:
 	}
 	void LIGHT(int num)
 	{
-		if(num == 0)
+		if (num == 0)
 		{
 			Restaurant::customer *cusIter = this->waiting_Queue->head;
-			for(int i = 0;i<this->waiting_Queue->size;i++)
+			for (int i = 0; i < this->waiting_Queue->size; i++)
 			{
 				cusIter->print();
 				cusIter = cusIter->next;
 			}
 		}
-		else if(num>0)
+		else if (num > 0)
 		{
 			Restaurant::customer *cusIter = this->lastChangedPlace;
-			for(int i =0;i<this->size;i++)
+			for (int i = 0; i < this->size; i++)
 			{
 				cusIter->print();
 				cusIter = cusIter->next;
 			}
 		}
-		else if(num<0)
+		else if (num < 0)
 		{
 			Restaurant::customer *cusIter = this->lastChangedPlace;
-			for(int i =0;i<this->size;i++)
+			for (int i = 0; i < this->size; i++)
 			{
 				cusIter->print();
 				cusIter = cusIter->prev;
 			}
 		}
 	}
-
-
 };
