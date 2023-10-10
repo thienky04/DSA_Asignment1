@@ -411,7 +411,7 @@ public:
 			{
 				Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(this->timer_Queue->head);
 				this->remove_Customer_Table(removedCus);
-				// delete removedCus;
+				 delete removedCus;
 			}
 		}
 		else if (num > size)
