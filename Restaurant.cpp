@@ -8,16 +8,26 @@ class Ref_Customer
 {
 public:
 	Restaurant::customer *refCustomer;
+	bool inTable;
 	CustomerType type;
 	Ref_Customer *next;
 	Ref_Customer *prev;
 	Ref_Customer(){};
 	~Ref_Customer(){};
+	void setTableStatus(bool status)
+	{
+		this->inTable = status;
+	}
+	bool isInTable()
+	{
+		return this->inTable;
+	}
 	Ref_Customer(Restaurant::customer *cus, Ref_Customer *next = nullptr, Ref_Customer *prev = nullptr)
 	{
 		this->refCustomer = cus;
 		this->next = next;
 		this->prev = prev;
+		this->inTable = false;
 	};
 };
 class Ref_List
@@ -29,10 +39,11 @@ public:
 	int totalEnergy;
 	Ref_List() : head{nullptr}, tail{nullptr}, size(0), totalEnergy(0){};
 	~Ref_List(){};
-	void rotate_Ref(); // used for REVERSAL METHOD
-	void push_back(Restaurant::customer *newCus)
+	void rotate_Ref();											  // used for REVERSAL METHOD
+	void push_back(Restaurant::customer *newCus, bool cus_status) // cus_status = true: customer is in table
 	{
 		Ref_Customer *newRef = new Ref_Customer(newCus);
+		newRef->setTableStatus(cus_status);
 		if (!head)
 		{
 			head = tail = newRef;
@@ -182,7 +193,7 @@ public:
 			this->CL_Energy_Sum_W -= newCus->energy;
 		}
 	};
-	void remove_Out_Of_Queue(Restaurant::customer *removeCus)
+	Restaurant::customer* remove_Out_Of_Queue(Restaurant::customer *removeCus)
 	{
 		if (removeCus == head)
 		{
@@ -224,6 +235,7 @@ public:
 		{
 			this->CL_Energy_Sum_W += removeCus->energy;
 		}
+		return removeCus;
 	};
 	Waiting_Queue() : head(nullptr), tail(nullptr), size(0), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
 	~Waiting_Queue()
@@ -240,6 +252,7 @@ public:
 	int CL_energySum;
 	Ref_List *timer_Queue;
 	Waiting_Queue *waiting_Queue;
+
 	imp_res() : size(0), lastChangedPlace(nullptr), CTS_energySum(0), CL_energySum(0)
 	{
 		timer_Queue = new Ref_List();
@@ -366,19 +379,33 @@ public:
 			this->CL_energySum += removeCus->energy;
 		}
 	}
-	void RED(string name, int energy)
+	void queueToTable()
 	{
-		if (energy == 0 || (this->res_Is_Full() && this->waiting_Queue->isFull()) || this->search_Name_Insise(name) || this->waiting_Queue->search_Name_Outside(name))
-		{
+		if (this->waiting_Queue->size == 0)
 			return;
+		else
+		{
+			while (this->size != MAXSIZE)
+			{
+				if(this->waiting_Queue->size==0)
+				{
+					return;
+				}
+				else
+				{
+					this->pushIntoTable(this->waiting_Queue->remove_Out_Of_Queue(this->waiting_Queue->head)); //pop the customer out and then push into the table
+				}
+			}
 		}
-		Restaurant::customer *newCus = new customer(name, energy, nullptr, nullptr);
+	}
+	void pushIntoTable(Restaurant::customer *newCus)
+	{
 		if (size == 0)
 		{
 			this->lastChangedPlace = newCus;
 			this->size++;
 			newCus->next = newCus->prev = newCus;
-			this->timer_Queue->push_back(newCus);
+			this->timer_Queue->push_back(newCus, true);
 			return;
 		}
 		else if (this->size < MAXSIZE / 2)
@@ -391,39 +418,51 @@ public:
 			{
 				this->insert_Left_Table(newCus, this->lastChangedPlace);
 			}
-			this->timer_Queue->push_back(newCus);
+			this->timer_Queue->push_back(newCus, true);
 		}
 		else if (this->size >= MAXSIZE / 2 && this->size < MAXSIZE)
 		{
 			this->insert_Second_Case(newCus);
-			this->timer_Queue->push_back(newCus);
+			this->timer_Queue->push_back(newCus, true);
 		}
-		else if (this->size == MAXSIZE)
+	}
+	void RED(string name, int energy)
+	{
+		if (energy == 0 || (this->res_Is_Full() && this->waiting_Queue->isFull()) || this->search_Name_Insise(name) || this->waiting_Queue->search_Name_Outside(name))
 		{
+			return;
+		}
+		Restaurant::customer *newCus = new customer(name, energy, nullptr, nullptr);
+		if (this->res_Is_Full())
+		{
+			this->pushIntoTable(newCus);
+		}
+		else
+		{
+			this->timer_Queue->push_back(newCus, false);
 			this->waiting_Queue->push_back(newCus);
 		}
 	}
 	void BLUE(int num)
 	{
-		if (num <= size)
+		int outNum = num < size ? num : size;
+		Ref_Customer *Cus_iterator = this->timer_Queue->head;
+		Ref_Customer *temp_iterator = nullptr;
+		int count = 0;
+		while (count != outNum)
 		{
-			for (int i = 0; i < num; i++)
+			temp_iterator = Cus_iterator->next;
+			if (Cus_iterator->isInTable())
 			{
-				Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(this->timer_Queue->head);
-				this->remove_Customer_Table(removedCus);
-				 delete removedCus;
-			}
-		}
-		else if (num > size)
-		{
-			int firstSize = size;
-			for (int i = 0; i < firstSize; i++)
-			{
-				Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(this->timer_Queue->head);
+				Restaurant::customer *removedCus = this->timer_Queue->remove_Reference(Cus_iterator);
 				this->remove_Customer_Table(removedCus);
 				delete removedCus;
+				count++;
+				Cus_iterator
 			}
+			Cus_iterator = temp_iterator;
 		}
+		this->queueToTable();
 	}
 	void PURPLE(){
 
@@ -434,16 +473,15 @@ public:
 	{
 		// logicControl used to control the logic so that we dont need to duplicate the code for if else
 		bool logicControl = this->CTS_energySum + this->waiting_Queue->CL_Energy_Sum_W < this->CL_energySum + this->waiting_Queue->CL_Energy_Sum_W;
-		Ref_Customer *refCusIter = this->timer_Queue->head;
+		Ref_Customer *refCusIter = this->timer_Queue->tail;
 		Ref_Customer *tempRef = nullptr;
 		Restaurant::customer *cusIter = nullptr;
 		Restaurant::customer *tempCus = nullptr;
-		int resSize = this->size;
-		int waitSize = this->waiting_Queue->size;
+		int resSize = this->timer_Queue->size;
 		for (int i = 0; i < resSize; i++)
 		{
 			cusIter = refCusIter->refCustomer;
-			tempRef = refCusIter->next;
+			tempRef = refCusIter->prev;
 			if ((cusIter->energy < 0) ^ logicControl)
 			{
 				this->timer_Queue->remove_Reference(refCusIter);
@@ -453,18 +491,6 @@ public:
 				cusIter = nullptr;
 			}
 			refCusIter = tempRef;
-		}
-		cusIter = this->waiting_Queue->head;
-		for (int i = 0; i < waitSize; i++)
-		{
-			tempCus = cusIter->next;
-			if ((cusIter->energy < 0) ^ logicControl)
-			{
-				this->waiting_Queue->remove_Out_Of_Queue(cusIter);
-				cusIter->print();
-				delete cusIter;
-			}
-			cusIter = tempCus;
 		}
 	}
 	void LIGHT(int num)
