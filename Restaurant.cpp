@@ -10,6 +10,7 @@ public:
 	Restaurant::customer *refCustomer;
 	bool inTable;
 	CustomerType type;
+	int orderIndex;
 	Ref_Customer *next;
 	Ref_Customer *prev;
 	Ref_Customer(){};
@@ -22,12 +23,13 @@ public:
 	{
 		return this->inTable;
 	}
-	Ref_Customer(Restaurant::customer *cus, Ref_Customer *next = nullptr, Ref_Customer *prev = nullptr)
+	Ref_Customer(Restaurant::customer *cus, int order = 0, Ref_Customer *next = nullptr, Ref_Customer *prev = nullptr)
 	{
 		this->refCustomer = cus;
 		this->next = next;
 		this->prev = prev;
 		this->inTable = false;
+		this->orderIndex = order;
 	};
 };
 class Ref_List
@@ -38,11 +40,10 @@ public:
 	int size;
 	int totalEnergy;
 	Ref_List() : head{nullptr}, tail{nullptr}, size(0), totalEnergy(0){};
-	~Ref_List(){};
-	void rotate_Ref();											  // used for REVERSAL METHOD
-	void push_back(Restaurant::customer *newCus, bool cus_status) // cus_status = true: customer is in table
+	~Ref_List(){};																		 // used for REVERSAL METHOD
+	void push_back(Restaurant::customer *newCus, bool cus_status = false, int order = 0) // cus_status = true: customer is in table
 	{
-		Ref_Customer *newRef = new Ref_Customer(newCus);
+		Ref_Customer *newRef = new Ref_Customer(newCus,order);
 		newRef->setTableStatus(cus_status);
 		if (!head)
 		{
@@ -109,34 +110,42 @@ public:
 		{
 			throw std::out_of_range("Segmentation fault at refToCustomer method!");
 		}
-		Ref_Customer *ref = head;
+		Ref_Customer *ref = tail;
 		while (ref)
 		{
 			if (ref->refCustomer == cus)
 				return ref;
 			else
 			{
-				ref = ref->next;
+				ref = ref->prev;
 			}
 		}
+		throw std::out_of_range("Cannot find Customer");
 	}
 };
-class Waiting_Queue
+class Waiting_Queue : public Ref_List
 {
 public:
-	Restaurant::customer *head;
-	Restaurant::customer *tail;
-	void clear()
+	int timerIndex;
+	void print()
 	{
-		int tempSize = size;
-		for (int i = 0; i < tempSize; i++)
+		Ref_Customer *cusIter = head;
+		for (int i = 0; i < size; i++)
 		{
-			Restaurant::customer *removed = this->head;
-			this->remove_Out_Of_Queue(this->head);
-			delete removed;
+			cusIter->refCustomer->print();
+			cusIter = cusIter->next;
 		}
 	}
-	int size;
+	void clear()
+	{
+		// int tempSize = size;
+		// for (int i = 0; i < tempSize; i++)
+		// {
+		// 	Restaurant::customer *removed = this->head;
+		// 	this->remove_Out_Of_Queue(this->head);
+		// 	delete removed;
+		// }
+	}
 	int CTS_Energy_Sum_W;
 	int CL_Energy_Sum_W;
 	// int max_Abs_Energy;
@@ -145,45 +154,11 @@ public:
 	{
 		return size >= MAXSIZE;
 	};
-	bool search_Name_Outside(const string &name)
+
+	void push_back_wQueue(Restaurant::customer *newCus)
 	{
-		if (size == 0)
-			return false;
-		Restaurant::customer *check = head;
-		while (check)
-		{
-			if (check->name == name)
-			{
-				return true;
-			}
-			else
-			{
-				check = check->next;
-			}
-		}
-		return false;
-	};
-	int shellShort();
-	void push_back(Restaurant::customer *newCus)
-	{
-		if (!head)
-		{
-			head = tail = newCus;
-			// this->index_Of_Last_Max = 0;
-			// this->max_Abs_Energy = abs(newCus->energy);
-		}
-		else
-		{
-			tail->next = newCus;
-			newCus->prev = tail;
-			tail = newCus;
-			// if(abs(newCus->energy) >= this->max_Abs_Energy)
-			// {
-			// 	this->max_Abs_Energy = abs(newCus->energy);
-			// 	this->index_Of_Last_Max = size;
-			// }
-		}
-		this->size++;
+		this->push_back(newCus, timerIndex);
+		timerIndex++;
 		if (newCus->energy > 0)
 		{
 			this->CTS_Energy_Sum_W += newCus->energy;
@@ -193,51 +168,174 @@ public:
 			this->CL_Energy_Sum_W -= newCus->energy;
 		}
 	};
-	Restaurant::customer* remove_Out_Of_Queue(Restaurant::customer *removeCus)
+	Restaurant::customer *remove_Out_Of_Queue(Ref_Customer *removeCus)
 	{
-		if (removeCus == head)
+
+		if (removeCus->refCustomer->energy > 0)
 		{
-			if (this->size == 1)
-			{
-				this->size = 0;
-				this->head = nullptr;
-				this->tail = nullptr;
-			}
-			else
-			{
-				Restaurant::customer *newHead = head->next;
-				newHead->prev = nullptr;
-				head->next = nullptr;
-				head = newHead;
-			}
+			this->CTS_Energy_Sum_W -= removeCus->refCustomer->energy;
 		}
-		else if (removeCus == tail)
+		else if (removeCus->refCustomer->energy < 0)
 		{
-			Restaurant::customer *newTail = tail->prev;
-			newTail->next = nullptr;
-			tail->prev = nullptr;
-			tail = newTail;
+			this->CL_Energy_Sum_W += removeCus->refCustomer->energy;
+		}
+		return this->remove_Reference(removeCus);
+	};
+	void swap(Ref_Customer *&clock_wise, Ref_Customer *&anti_clock_wise, int interval)
+	{
+		if (clock_wise == head)
+		{
+			this->head = anti_clock_wise;
+		}
+		if(anti_clock_wise == tail)
+		{
+			this->tail = clock_wise;
+		}
+		Ref_Customer *left = clock_wise->prev;
+		Ref_Customer *right = clock_wise->next;
+		if (interval != 1)
+		{
+
+			clock_wise->next = anti_clock_wise->next;
+			clock_wise->prev = anti_clock_wise->prev;
+			if (anti_clock_wise->next)
+			{
+				anti_clock_wise->next->prev = clock_wise;
+			}
+			anti_clock_wise->prev->next = clock_wise;
+			if (left)
+			{
+				left->next = anti_clock_wise;
+			}
+			anti_clock_wise->prev = left;
+			anti_clock_wise->next = right;
+			right->prev = anti_clock_wise;
 		}
 		else
 		{
-			Restaurant::customer *left = removeCus->prev;
-			Restaurant::customer *right = removeCus->next;
-			left->next = right;
-			right->prev = left;
-			removeCus->prev = removeCus->next = nullptr;
+			clock_wise->next = anti_clock_wise->next;
+			if (anti_clock_wise->next)
+			{
+				anti_clock_wise->next->prev = clock_wise;
+			}
+			if (clock_wise->prev)
+			{
+				clock_wise->prev->next = anti_clock_wise;
+			}
+			anti_clock_wise->prev = clock_wise->prev;
+			clock_wise->prev = anti_clock_wise;
+			anti_clock_wise->next = clock_wise;
 		}
-		this->size--;
-		if (removeCus->energy > 0)
+
+		left = clock_wise;
+		clock_wise = anti_clock_wise;
+		anti_clock_wise = left;
+	}
+	bool canSwap(Ref_Customer *leftIter, Ref_Customer *rightIter)
+	{
+		return (abs(leftIter->refCustomer->energy) < abs(rightIter->refCustomer->energy)) || ((abs(leftIter->refCustomer->energy) == abs(rightIter->refCustomer->energy)) && leftIter->orderIndex < rightIter->orderIndex);
+	}
+	int sortBack(Ref_Customer *changed, int interval)
+	{
+		Ref_Customer *right = changed;
+		Ref_Customer *left = right;
+		for (int i = 0; i < interval; i++)
 		{
-			this->CTS_Energy_Sum_W -= removeCus->energy;
+
+			if (!left)
+			{
+				return 0;
+			}
+			left = left->prev;
 		}
-		else if (removeCus->energy < 0)
+		int countBack = 0;
+		while (left)
 		{
-			this->CL_Energy_Sum_W += removeCus->energy;
+			if (canSwap(left, right))
+			{
+				swap(left, right, interval);
+				// cout << "sort back with " << interval << endl;
+				// this->print();
+				countBack++;
+			}
+			right = left;
+			for (int i = 0; i < interval; i++)
+			{
+				if (!left)
+				{
+					return countBack;
+				}
+				left = left->prev;
+			}
 		}
-		return removeCus;
+		return countBack;
 	};
-	Waiting_Queue() : head(nullptr), tail(nullptr), size(0), CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0){};
+	int sortWithK(int interval, int length)
+	{
+		Ref_Customer *leftIter = this->head;
+		Ref_Customer *rightIter = this->head;
+		int count = 0;
+		for (int i = 0; i < interval; i++)
+		{
+			rightIter = rightIter->next;
+		}
+		for (int i = 0; i < length - interval; i++)
+		{
+			if (canSwap(leftIter, rightIter))
+			{
+				swap(leftIter, rightIter, interval);
+				count += 1;
+				// cout << "sort with " << interval << endl;
+				// this->print();
+				count += sortBack(leftIter, interval);
+				leftIter = rightIter;
+				for (int i = 0; i < interval; i++)
+				{
+					if (!leftIter)
+					{
+						return 0;
+					}
+					leftIter = leftIter->prev;
+				}
+			}
+			leftIter = leftIter->next;
+			rightIter = rightIter->next;
+		}
+		return count;
+	}
+	int shellSort()
+	{
+		int length = findLastMaxEnergy() + 1;
+		int interval = length / 2;
+		int count = 0;
+		while (interval)
+		{
+			count += this->sortWithK(interval, length);
+			interval = interval / 2;
+		}
+		return count;
+	}
+	int findLastMaxEnergy()
+	{
+		Ref_Customer *iter = this->head;
+		int max = 0;
+		int index = 0;
+		int orderIndex = 0;
+		int tempEnergy = 0;
+		for (int i = 0; i < this->size; i++)
+		{
+			tempEnergy = iter->refCustomer->energy;
+			if (tempEnergy > max || (tempEnergy == max && iter->orderIndex > orderIndex))
+			{
+				max = tempEnergy;
+				index = i;
+				orderIndex = iter->orderIndex;
+			}
+			iter = iter->next;
+		}
+		return index;
+	}
+	Waiting_Queue() : CTS_Energy_Sum_W(0), CL_Energy_Sum_W(0), timerIndex(0){};
 	~Waiting_Queue()
 	{
 		this->clear();
@@ -265,7 +363,7 @@ public:
 		delete this->waiting_Queue;
 	};
 	bool res_Is_Full() { return size >= MAXSIZE; };
-	void insert_Second_Case(customer *newCus)
+	void insert_anti_clock_wise_Case(customer *newCus)
 	{
 		int Res = 0;
 		int tempDiff = 0;
@@ -387,13 +485,13 @@ public:
 		{
 			while (this->size != MAXSIZE)
 			{
-				if(this->waiting_Queue->size==0)
+				if (this->waiting_Queue->size == 0)
 				{
 					return;
 				}
 				else
 				{
-					this->pushIntoTable(this->waiting_Queue->remove_Out_Of_Queue(this->waiting_Queue->head)); //pop the customer out and then push into the table
+					this->pushIntoTable(this->waiting_Queue->remove_Out_Of_Queue(this->waiting_Queue->head)); // pop the customer out and then push into the table
 				}
 			}
 		}
@@ -406,11 +504,10 @@ public:
 			this->size++;
 			newCus->next = newCus->prev = newCus;
 			this->timer_Queue->push_back(newCus, true);
-			return;
 		}
 		else if (this->size < MAXSIZE / 2)
 		{
-			if (energy > this->lastChangedPlace->energy)
+			if (newCus->energy > this->lastChangedPlace->energy)
 			{
 				this->insert_Right_Table(newCus, this->lastChangedPlace);
 			}
@@ -422,25 +519,25 @@ public:
 		}
 		else if (this->size >= MAXSIZE / 2 && this->size < MAXSIZE)
 		{
-			this->insert_Second_Case(newCus);
+			this->insert_anti_clock_wise_Case(newCus);
 			this->timer_Queue->push_back(newCus, true);
 		}
 	}
 	void RED(string name, int energy)
 	{
-		if (energy == 0 || (this->res_Is_Full() && this->waiting_Queue->isFull()) || this->search_Name_Insise(name) || this->waiting_Queue->search_Name_Outside(name))
+		if (energy == 0 || (this->res_Is_Full() && this->waiting_Queue->isFull()) || this->search_Name_Insise(name))
 		{
 			return;
 		}
 		Restaurant::customer *newCus = new customer(name, energy, nullptr, nullptr);
-		if (this->res_Is_Full())
+		if (!this->res_Is_Full())
 		{
 			this->pushIntoTable(newCus);
 		}
 		else
 		{
 			this->timer_Queue->push_back(newCus, false);
-			this->waiting_Queue->push_back(newCus);
+			this->waiting_Queue->push_back_wQueue(newCus);
 		}
 	}
 	void BLUE(int num)
@@ -458,25 +555,195 @@ public:
 				this->remove_Customer_Table(removedCus);
 				delete removedCus;
 				count++;
-				Cus_iterator
 			}
 			Cus_iterator = temp_iterator;
 		}
 		this->queueToTable();
 	}
-	void PURPLE(){
-
+	void swapTwoCus(Restaurant::customer *&clock_wise, Restaurant::customer *&anti_clock_wise)
+	{
+		Restaurant::customer  *left = clock_wise->prev;
+		Restaurant::customer  *right = clock_wise->next;
+		if ( clock_wise->prev != anti_clock_wise)
+		{
+			clock_wise->next = anti_clock_wise->next;
+			clock_wise->prev = anti_clock_wise->prev;
+			if (anti_clock_wise->next)
+			{
+				anti_clock_wise->next->prev = clock_wise;
+			}
+			anti_clock_wise->prev->next = clock_wise;
+			if (left)
+			{
+				left->next = anti_clock_wise;
+			}
+			anti_clock_wise->prev = left;
+			anti_clock_wise->next = right;
+			right->prev = anti_clock_wise;
+		}
+		else
+		{
+			clock_wise->next = anti_clock_wise->next;
+			if (anti_clock_wise->next)
+			{
+				anti_clock_wise->next->prev = clock_wise;
+			}
+			if (clock_wise->prev)
+			{
+				clock_wise->prev->next = anti_clock_wise;
+			}
+			anti_clock_wise->prev = clock_wise->prev;
+			clock_wise->prev = anti_clock_wise;
+			anti_clock_wise->next = clock_wise;
+		}
+		left = clock_wise;
+		clock_wise = anti_clock_wise;
+		anti_clock_wise = left;
+	}
+	void PURPLE()
+	{
+		// cout<<"Before short: "<<endl;
+		// this->LIGHT(0);
+		int count = this->waiting_Queue->shellSort();
+		// cout<<"After short: "<< count<<endl;
+		// this->LIGHT(0);
+		this->BLUE(count % MAXSIZE);
+		// cout<<"After BLUE: "<<endl;
+		// this->LIGHT(0);
 	};
-	void REVERSAL(){};
-	void UNLIMITED_VOID(){};
+	void Reverse(bool logicControl, Restaurant::customer* origin)
+	{
+		
+		Restaurant::customer* anti_clock = origin;
+		Restaurant::customer* clock = origin->prev;
+		while(anti_clock != clock)
+		{
+			if((anti_clock->energy > 0) ^ logicControl)
+			{
+				anti_clock = anti_clock->next;
+				continue;
+			}
+			if((clock->energy > 0) ^ logicControl)
+			{
+				clock = clock->prev;
+				continue;
+			}
+			swapTwoCus(anti_clock,clock);
+			if(anti_clock->next == clock)
+				break;
+			anti_clock = anti_clock->next;
+			clock = clock->prev;
+		}
+		
+	}
+	
+	void REVERSAL(){	
+		bool logicControl = this->lastChangedPlace->energy > 0;
+		Restaurant::customer* origin = this->lastChangedPlace;
+		Restaurant::customer* origin2 = this->lastChangedPlace;
+		for(int i = 0;i<this->size;i++)
+		{
+			if(origin2->energy > 0 ^ logicControl)
+			{
+				break;
+			}
+			origin2 = origin2->next;
+		}
+		this->Reverse(logicControl, origin);
+		this->Reverse(!logicControl,origin2);
+		cout<<"After Reverse"<<endl;
+	};
+	void UNLIMITED_VOID(){
+		//cout<<"Void"<<endl;
+		if(this->size < 4) return;
+		Restaurant::customer* leftIter = this->lastChangedPlace;
+		Restaurant::customer* rightIter = this->lastChangedPlace;
+		Restaurant::customer* iter  = this->lastChangedPlace;
+		Restaurant::customer* leftResult = this->lastChangedPlace;
+		Restaurant::customer* rightResult = this->lastChangedPlace;
+		Restaurant::customer* leftCurrent = this->lastChangedPlace;
+		int totalSum = 0;
+		int currentSum = 0;
+		int windowSum = 0;
+		for(int i = 1;i<4;i++)
+		{
+			windowSum+= rightIter->energy;
+			rightIter = rightIter->next;
+		}
+		windowSum+=rightIter->energy;
+		totalSum = windowSum;
+		rightResult = rightIter;
+		for(int i = 0;i<this->size - 4;i++)
+		{
+			if(iter->energy < iter->energy + currentSum)
+			{
+				currentSum = iter->energy;
+				leftCurrent = iter;
+			}
+			else
+			{
+				currentSum = iter->energy + currentSum;
+			}
+			windowSum = windowSum + rightIter->next->energy - leftIter->energy;
+			leftIter = leftIter->next;
+			rightIter = rightIter->next;
+			if(windowSum <=totalSum)
+			{
+				totalSum = windowSum;
+				leftResult = leftIter;
+				rightResult = rightIter;
+			}
+			if(windowSum + currentSum <=totalSum)
+			{
+				totalSum = windowSum+currentSum;
+				leftResult = leftCurrent;
+				rightResult = rightIter;
+			}
+			iter=iter->next;
+		}
+		iter = leftResult;
+		int minCus = leftResult->energy;
+		int count = 1;
+		Restaurant::customer* printIter = iter;
+		while(iter != rightResult)
+		{
+			if(iter->energy<minCus)
+			{
+				minCus = iter->energy;
+				printIter = iter;
+			}
+			count++;
+			iter= iter->next;
+		}
+		
+		if(rightResult->energy < minCus)
+		{
+			minCus = rightResult->energy;
+			printIter = rightResult;
+		}
+		for(int i =0;i<count;i++)
+		{
+			printIter->print();
+			if(printIter == rightResult)
+			{
+				printIter = leftResult;
+			}
+			else
+			{
+				printIter = printIter->next;
+			}
+		}
+	};
 	void DOMAIN_EXPANSION()
 	{
+		cout << "BD Duoi" << endl;
 		// logicControl used to control the logic so that we dont need to duplicate the code for if else
-		bool logicControl = this->CTS_energySum + this->waiting_Queue->CL_Energy_Sum_W < this->CL_energySum + this->waiting_Queue->CL_Energy_Sum_W;
+		bool logicControl = this->CTS_energySum + this->waiting_Queue->CTS_Energy_Sum_W < this->CL_energySum + this->waiting_Queue->CL_Energy_Sum_W;
 		Ref_Customer *refCusIter = this->timer_Queue->tail;
 		Ref_Customer *tempRef = nullptr;
 		Restaurant::customer *cusIter = nullptr;
 		Restaurant::customer *tempCus = nullptr;
+		bool tempStatus = true;
 		int resSize = this->timer_Queue->size;
 		for (int i = 0; i < resSize; i++)
 		{
@@ -484,23 +751,33 @@ public:
 			tempRef = refCusIter->prev;
 			if ((cusIter->energy < 0) ^ logicControl)
 			{
+				tempStatus = refCusIter->isInTable();
 				this->timer_Queue->remove_Reference(refCusIter);
 				cusIter->print();
-				this->remove_Customer_Table(cusIter);
+				if (tempStatus)
+				{
+					this->remove_Customer_Table(cusIter);
+				}
+				else
+				{
+					this->waiting_Queue->remove_Out_Of_Queue(this->waiting_Queue->refToCustomer(cusIter));
+				}
 				delete cusIter;
 				cusIter = nullptr;
 			}
 			refCusIter = tempRef;
 		}
+		cout << "Duoi xong" << endl;
+		this->queueToTable();
 	}
 	void LIGHT(int num)
 	{
 		if (num == 0)
 		{
-			Restaurant::customer *cusIter = this->waiting_Queue->head;
+			Ref_Customer *cusIter = this->waiting_Queue->head;
 			for (int i = 0; i < this->waiting_Queue->size; i++)
 			{
-				cusIter->print();
+				cusIter->refCustomer->print();
 				cusIter = cusIter->next;
 			}
 		}
